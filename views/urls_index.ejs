@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <title>TinyApp</title>
+</head>
+
+<body>
+  <h2>URLs and their shortened URL</h2>
+  <ul>
+    <% for (let key in urls) { %>
+      <li><%= key %>  |  <%= urls[key] %></li>
+    <% } %>
+  </ul>
+
+  <a href=''><p>Shorten new URL</p></a>
+</body>
+
+</html>
