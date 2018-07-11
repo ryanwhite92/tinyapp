@@ -22,7 +22,12 @@
     <% for (let key in urls) { %>
       <tr style="text-align: center">
         <td><%= urls[key] %></td>
-        <td><%= key %></td>
+        <td>
+          <%= key %>
+          <form method="POST" action="urls/<%= key %>/delete">
+            <input type="submit" value="Delete">
+          </form>
+        </td>
       </tr>
     <% } %>
 
