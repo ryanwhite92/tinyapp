@@ -38,10 +38,11 @@ app.get('/urls/new', (req, res) => {
   res.render('urls_new');
 });
 
+// Delete shortURL key-value pair from database; redirect to urls page
 app.post('/urls/:key/delete', (req, res) => {
-  let deleteKey = req.params.key;
+  const deleteURL = req.params.key;
 
-  delete urlDatabase[deleteKey];
+  delete urlDatabase[deleteURL];
 
   res.redirect('/urls');
 });
@@ -68,6 +69,16 @@ app.get('/urls/:key', (req, res) => {
 
     res.render('urls_show', templateVars);
   }
+});
+
+// Update shortURL to link to a different longURL
+app.post('/urls/:key/update', (req, res) => {
+  const shortURL = req.params.key;
+  const updatedURL = req.body.updatedURL;
+
+  urlDatabase[shortURL] = updatedURL;
+
+  res.redirect(`/urls/${shortURL}`);
 });
 
 app.get('/u/:key', (req, res) => {

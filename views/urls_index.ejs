@@ -11,20 +11,19 @@
     <%- include('partials/_header') %>
   </header>
 
-  <h2>URLs and their shortened URL</h2>
-
   <table style="width: 40%">
-    <tr>
+    <tr style="text-align: left;">
+      <th>shortURL</th>
       <th>URL</th>
-      <th>Shortened URL</th>
     </tr>
 
     <% for (let key in urls) { %>
-      <tr style="text-align: center">
+      <tr>
+        <td><%= key %></td>
         <td><%= urls[key] %></td>
         <td>
-          <%= key %>
-          <form method="POST" action="urls/<%= key %>/delete">
+          <a href="/urls/<%= key %>">Edit</a>
+          <form method="POST" action="urls/<%= key %>/delete" style="display: inline-block;">
             <input type="submit" value="Delete">
           </form>
         </td>
@@ -33,7 +32,7 @@
 
   </table>
 
-  <a href=''><p>SHORTEN NEW URL</p></a>
+  <a href="/urls/new"><p>SHORTEN NEW URL</p></a>
 </body>
 
 </html>
