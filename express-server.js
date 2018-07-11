@@ -31,6 +31,7 @@ app.get('/', (req, res) => {
   res.end('Hello!');
 });
 
+// Set username cookie and redirect to `/urls`
 app.post('/login', (req, res) => {
   const userCookie = req.body.username;
 
@@ -38,13 +39,23 @@ app.post('/login', (req, res) => {
   res.redirect('/urls');
 });
 
+// Clears username cookie
+app.post('/logout', (req, res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
+});
+
 app.get('/urls', (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = {
+    urls: urlDatabase,
+    username: req.cookies['username']
+  };
+
   res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => {
-  res.render('urls_new');
+  res.render('urls_new', { username: req.cookies['username'] });
 });
 
 // Delete shortURL key-value pair from database; redirect to urls page
@@ -73,7 +84,8 @@ app.get('/urls/:key', (req, res) => {
 
     let templateVars = {
       urls: urlDatabase,
-      shortURL: req.params.key
+      shortURL: req.params.key,
+      username: req.cookies['username']
     };
 
     res.render('urls_show', templateVars);
