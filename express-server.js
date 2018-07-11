@@ -58,14 +58,6 @@ app.get('/urls/new', (req, res) => {
   res.render('urls_new', { username: req.cookies['username'] });
 });
 
-// Delete shortURL key-value pair from database; redirect to urls page
-app.post('/urls/:key/delete', (req, res) => {
-  const deleteURL = req.params.key;
-
-  delete urlDatabase[deleteURL];
-
-  res.redirect('/urls');
-});
 
 // Add shortURL: longURL key:value pair to urlDatabase and redirect
 // to another page (Browser sends another GET request).
@@ -92,7 +84,7 @@ app.get('/urls/:key', (req, res) => {
   }
 });
 
-// Update shortURL to link to a different longURL
+// Update shortURL to link to a different URL
 app.post('/urls/:key/update', (req, res) => {
   const shortURL = req.params.key;
   const updatedURL = req.body.updatedURL;
@@ -102,6 +94,16 @@ app.post('/urls/:key/update', (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
+// Delete shortURL key-value pair from database; redirect to urls page
+app.post('/urls/:key/delete', (req, res) => {
+  const deleteURL = req.params.key;
+
+  delete urlDatabase[deleteURL];
+
+  res.redirect('/urls');
+});
+
+// Redirect to linked URL
 app.get('/u/:key', (req, res) => {
   let longURL = urlDatabase[req.params.key];
 
