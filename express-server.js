@@ -1,11 +1,16 @@
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({extended: true}));
 
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+const cookieSession = require('cookie-session');
+app.use(cookieSession({
+  name: 'session',
+  keys: [process.env.SESSION_SECRET]
+}));
 
 const bcrypt = require('bcrypt');
 const PORT = 8080;
@@ -45,10 +50,10 @@ app.get('/', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  res.render('login', { user: users[req.cookies['user_id']] });
+  res.render('login', { user: users[req.session.userId] });
 });
 
-// Set user_id cookie and redirect to `/urls`
+// Set userId cookie and redirect to `/urls`
 app.post('/login', (req, res) => {
   let userId;
 
@@ -75,18 +80,18 @@ app.post('/login', (req, res) => {
     return;
   }
 
-  res.cookie('user_id', userId);
+  req.session.userId = userId;
   res.redirect('/urls');
 });
 
-// Clears user_id cookie
+// Clears userId cookie
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect('/urls');
 });
 
 app.get('/register', (req, res) => {
-  res.render('register', { user: users[req.cookies['user_id']] });
+  res.render('register', { user: users[req.session.userId] });
 });
 
 app.post('/register', (req, res) => {
@@ -114,24 +119,24 @@ app.post('/register', (req, res) => {
     password: hashedPassword
   };
 
-  res.cookie('user_id', randomId);
+  req.session.userId = randomId;
   res.redirect('/urls');
 });
 
 app.get('/urls', (req, res) => {
-  const currentUser = req.cookies.user_id;
+  const currentUser = req.session.userId;
   const ownedUrls = urlsForUser(currentUser);
 
   const templateVars = {
     urls: ownedUrls,
-    user: users[req.cookies['user_id']]
+    user: users[currentUser]
   };
 
   res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => {
-  const currentUser = req.cookies.user_id;
+  const currentUser = req.session.userId;
 
   // Undefined if not logged in, redirect to login page
   if (!currentUser) {
@@ -145,7 +150,7 @@ app.get('/urls/new', (req, res) => {
 
 // Add shortURL:longURL key:value pair to urlDatabase and redirect
 app.post('/urls', (req, res) => {
-  const currentUser = req.cookies.user_id;
+  const currentUser = req.session.userId;
   const longURL = req.body.longURL;
   const shortURL = generateRandomString();
 
@@ -165,7 +170,7 @@ app.get('/urls/:key', (req, res) => {
     return;
   }
 
-  const currentUser = req.cookies.user_id;
+  const currentUser = req.session.userId;
   // If user is not logged in, send 403 and return
   if (!currentUser) {
     res.status(403).send('Login to view this page.');
@@ -173,7 +178,7 @@ app.get('/urls/:key', (req, res) => {
   }
 
   // If currentUser is not the owner of the shortURL, send 403 and return.
-  if (currentUser !== urlDatabase[shortURL].user_id) {
+  if (currentUser !== urlDatabase[shortURL].userId) {
     res.status(403).send('This is not your URL.');
     return;
   }
@@ -181,7 +186,7 @@ app.get('/urls/:key', (req, res) => {
   const templateVars = {
     urls: urlDatabase,
     shortURL: req.params.key,
-    user: users[req.cookies['user_id']]
+    user: users[currentUser]
   };
 
   res.render('urls_show', templateVars);
@@ -189,7 +194,7 @@ app.get('/urls/:key', (req, res) => {
 
 // Update shortURL to link to a different URL
 app.post('/urls/:key/update', (req, res) => {
-  const currentUser = req.cookies.user_id;
+  const currentUser = req.session.userId;
   const shortURL = req.params.key;
   const updatedURL = req.body.updatedURL;
 
@@ -206,7 +211,7 @@ app.post('/urls/:key/update', (req, res) => {
 
 // Delete shortURL key-value pair from database; redirect to urls page
 app.post('/urls/:key/delete', (req, res) => {
-  const currentUser = req.cookies.user_id;
+  const currentUser = req.session.userId;
   const shortURL = req.params.key;
 
   // If current user is not the owner/creator of link, send 403 and return
