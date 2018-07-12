@@ -7,14 +7,9 @@ app.use(bodyParser.urlencoded({extended: true}));
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
+const bcrypt = require('bcrypt');
 const PORT = 8080;
-
-const urlDatabase = {
-  'b2xVn2': 'http://www.lighthouselabs.ca',
-  '9sm5xK': 'http://www.google.com'
-};
-
-// Save userId, email and password for each registrant
+const urlDatabase = {};
 const users = {};
 
 app.set('view engine', 'ejs');
@@ -72,9 +67,10 @@ app.post('/login', (req, res) => {
     return;
   }
 
-  // if login password doesn't match password in `users`, set 403 Forbidden status
+  // if login password doesn't match hashed password in `users`, set 403 Forbidden status
   // code and return
-  if (users[userId].password !== req.body.password) {
+  const checkPassword = bcrypt.compareSync(req.body.password, users[userId].password);
+  if (!checkPassword) {
     res.status(403).send('Incorrect password');
     return;
   }
@@ -109,11 +105,13 @@ app.post('/register', (req, res) => {
   }
 
   const randomId = generateRandomString();
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
 
   users[randomId] = {
     id: randomId,
     email: req.body.email,
-    password: req.body.password
+    password: hashedPassword
   };
 
   res.cookie('user_id', randomId);
