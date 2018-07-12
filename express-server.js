@@ -46,7 +46,15 @@ app.post('/login', (req, res) => {
   for (let user in users) {
     if (users[user].email === req.body.email) {
       userId = user;
+      break;
     }
+  }
+
+  // userId will be udnefined if email is not in `users` database OR if login password
+  // doesn't match password in `users`, set 403 Forbidden status code and return
+  if (userId === undefined || users[userId].password !== req.body.password) {
+    res.status(403).send('Forbidden');
+    return;
   }
 
   res.cookie('user_id', userId);
