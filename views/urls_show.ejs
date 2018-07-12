@@ -14,7 +14,7 @@
   <h2>ShortURL: <%= shortURL %></h2>
 
   <form method="POST" action="/urls/<%= shortURL %>/update">
-    <input type="text" name="updatedURL" value="<%= urls[shortURL] %>" style="width: 200px;">
+    <input type="text" name="updatedURL" value="<%= urls[shortURL].url %>" style="width: 200px;">
     <input type="submit" value="Update">
   </form>
 

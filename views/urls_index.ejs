@@ -23,7 +23,7 @@
         <td><%= urls[key] %></td>
         <td>
           <a href="/urls/<%= key %>">Edit</a>
-          <form method="POST" action="urls/<%= key %>/delete" style="display: inline-block;">
+          <form method="POST" action="/urls/<%= key %>/delete" style="display: inline-block;">
             <input type="submit" value="Delete">
           </form>
         </td>

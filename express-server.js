@@ -19,6 +19,7 @@ const users = {};
 
 app.set('view engine', 'ejs');
 
+// Generates random 6 character string for userId and shortURL
 function generateRandomString() {
   const alphanumericChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
   let randomString = '';
@@ -29,6 +30,19 @@ function generateRandomString() {
   }
 
   return randomString;
+}
+
+// Returns urls created by a specific user
+function urlsForUser(id) {
+  const ownedUrls = {};
+
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userId === id) {
+      ownedUrls[url] = urlDatabase[url].url;
+    }
+  }
+
+  return ownedUrls;
 }
 
 app.get('/', (req, res) => {
@@ -107,8 +121,11 @@ app.post('/register', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  let templateVars = {
-    urls: urlDatabase,
+  const currentUser = req.cookies.user_id;
+  const ownedUrls = urlsForUser(currentUser);
+
+  const templateVars = {
+    urls: ownedUrls,
     user: users[req.cookies['user_id']]
   };
 
@@ -116,26 +133,54 @@ app.get('/urls', (req, res) => {
 });
 
 app.get('/urls/new', (req, res) => {
-  res.render('urls_new', { user: users[req.cookies['user_id']] });
+  const currentUser = req.cookies.user_id;
+
+  // Undefined if not logged in, redirect to login page
+  if (!currentUser) {
+    res.redirect('/login');
+    return;
+  }
+
+  res.render('urls_new', { user: users[currentUser] });
 });
 
 
 // Add shortURL:longURL key:value pair to urlDatabase and redirect
 app.post('/urls', (req, res) => {
-  let shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
+  const currentUser = req.cookies.user_id;
+  const longURL = req.body.longURL;
+  const shortURL = generateRandomString();
+
+  urlDatabase[shortURL] = {
+    url: longURL,
+    userId: currentUser
+  };
 
   res.redirect(`/urls/${shortURL}`);
 });
 
 app.get('/urls/:key', (req, res) => {
+  const shortURL = req.params.key;
   // If key is not in urlDatabase object, respond with `404: Not Found`.
-  if (!(req.params.key in urlDatabase)) {
+  if (!(shortURL in urlDatabase)) {
     res.status(404).send('Resource Not Found');
     return;
   }
 
-  let templateVars = {
+  const currentUser = req.cookies.user_id;
+  // If user is not logged in, send 403 and return
+  if (!currentUser) {
+    res.status(403).send('Login to view this page.');
+    return;
+  }
+
+  // If currentUser is not the owner of the shortURL, send 403 and return.
+  if (currentUser !== urlDatabase[shortURL].user_id) {
+    res.status(403).send('This is not your URL.');
+    return;
+  }
+
+  const templateVars = {
     urls: urlDatabase,
     shortURL: req.params.key,
     user: users[req.cookies['user_id']]
@@ -146,26 +191,41 @@ app.get('/urls/:key', (req, res) => {
 
 // Update shortURL to link to a different URL
 app.post('/urls/:key/update', (req, res) => {
+  const currentUser = req.cookies.user_id;
   const shortURL = req.params.key;
   const updatedURL = req.body.updatedURL;
 
-  urlDatabase[shortURL] = updatedURL;
+  // if currentUser is not the shortURL owner, send 403 and return
+  if (currentUser !== urlDatabase[shortURL].userId) {
+    res.status(403).send('You are not the owner of that link.');
+    return;
+  }
+
+  urlDatabase[shortURL].url = updatedURL;
 
   res.redirect(`/urls/${shortURL}`);
 });
 
 // Delete shortURL key-value pair from database; redirect to urls page
 app.post('/urls/:key/delete', (req, res) => {
-  const deleteURL = req.params.key;
+  const currentUser = req.cookies.user_id;
+  const shortURL = req.params.key;
 
-  delete urlDatabase[deleteURL];
+  // If current user is not the owner/creator of link, send 403 and return
+  if (currentUser !== urlDatabase[shortURL].userId) {
+    res.status(403).send('You are not the owner of that link.');
+    return;
+  }
+
+  delete urlDatabase[shortURL];
 
   res.redirect('/urls');
 });
 
 // Redirect to linked URL
 app.get('/u/:key', (req, res) => {
-  let longURL = urlDatabase[req.params.key];
+  let shortURL = req.params.key;
+  let longURL = urlDatabase[shortURL].url;
 
   res.redirect(longURL);
 });
