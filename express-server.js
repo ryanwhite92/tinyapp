@@ -10,10 +10,13 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
-let urlDatabase = {
+const urlDatabase = {
   'b2xVn2': 'http://www.lighthouselabs.ca',
   '9sm5xK': 'http://www.google.com'
 };
+
+// Save userId, email and password for each registrant
+const users = {};
 
 function generateRandomString() {
   const alphanumericChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
@@ -42,6 +45,23 @@ app.post('/login', (req, res) => {
 // Clears username cookie
 app.post('/logout', (req, res) => {
   res.clearCookie('username');
+  res.redirect('/urls');
+});
+
+app.get('/register', (req, res) => {
+  res.render('register', { username: req.cookies['username'] });
+});
+
+app.post('/register', (req, res) => {
+  const randomId = generateRandomString();
+
+  users[randomId] = {
+    id: randomId,
+    email: req.body.email,
+    password: req.body.password
+  };
+
+  res.cookie('user_id', randomId);
   res.redirect('/urls');
 });
 
