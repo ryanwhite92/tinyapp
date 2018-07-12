@@ -53,6 +53,20 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
+  // If email and/or password is empty, send 400 status code and return
+  if (req.body.email === '' || req.body.password === '') {
+    res.status(400).send('Bad Request.');
+    return;
+  }
+
+  // If email has already been used to register, send 400 status code and return
+  for (let id in users) {
+    if (users[id].email == req.body.email) {
+      res.status(400).send('Bad request.');
+      return;
+    }
+  }
+
   const randomId = generateRandomString();
 
   users[randomId] = {
