@@ -1,14 +1,13 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-
 const app = express();
-const PORT = 8080;
 
-app.set('view engine', 'ejs');
-
+const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({extended: true}));
+
+const cookieParser = require('cookie-parser');
 app.use(cookieParser());
+
+const PORT = 8080;
 
 const urlDatabase = {
   'b2xVn2': 'http://www.lighthouselabs.ca',
@@ -18,12 +17,14 @@ const urlDatabase = {
 // Save userId, email and password for each registrant
 const users = {};
 
+app.set('view engine', 'ejs');
+
 function generateRandomString() {
   const alphanumericChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
   let randomString = '';
 
   for (let i = 0; i < 6; i++) {
-    let random = Math.floor(Math.random() * 63);
+    let random = Math.floor(Math.random() * 62);
     randomString += alphanumericChars[random];
   }
 
@@ -40,7 +41,7 @@ app.get('/login', (req, res) => {
 
 // Set user_id cookie and redirect to `/urls`
 app.post('/login', (req, res) => {
-  let userId = undefined;
+  let userId;
 
   // If email is in `users` database, set userId
   for (let user in users) {
@@ -50,10 +51,17 @@ app.post('/login', (req, res) => {
     }
   }
 
-  // userId will be udnefined if email is not in `users` database OR if login password
-  // doesn't match password in `users`, set 403 Forbidden status code and return
-  if (userId === undefined || users[userId].password !== req.body.password) {
+  // userId will be undefined if email is not in `users` database set 403 Forbidden
+  // status code and return
+  if (!userId) {
     res.status(403).send('Forbidden');
+    return;
+  }
+
+  // if login password doesn't match password in `users`, set 403 Forbidden status
+  // code and return
+  if (users[userId].password !== req.body.password) {
+    res.status(403).send('Incorrect password');
     return;
   }
 
@@ -112,8 +120,7 @@ app.get('/urls/new', (req, res) => {
 });
 
 
-// Add shortURL: longURL key:value pair to urlDatabase and redirect
-// to another page (Browser sends another GET request).
+// Add shortURL:longURL key:value pair to urlDatabase and redirect
 app.post('/urls', (req, res) => {
   let shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL;
@@ -125,16 +132,16 @@ app.get('/urls/:key', (req, res) => {
   // If key is not in urlDatabase object, respond with `404: Not Found`.
   if (!(req.params.key in urlDatabase)) {
     res.status(404).send('Resource Not Found');
-  } else {
-
-    let templateVars = {
-      urls: urlDatabase,
-      shortURL: req.params.key,
-      user: users[req.cookies['user_id']]
-    };
-
-    res.render('urls_show', templateVars);
+    return;
   }
+
+  let templateVars = {
+    urls: urlDatabase,
+    shortURL: req.params.key,
+    user: users[req.cookies['user_id']]
+  };
+
+  res.render('urls_show', templateVars);
 });
 
 // Update shortURL to link to a different URL
