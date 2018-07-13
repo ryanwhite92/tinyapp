@@ -45,7 +45,7 @@ function urlsForUser(id) {
 
   for (let shortURL in urlDatabase) {
     if (urlDatabase[shortURL].userId === id) {
-      ownedUrls[shortURL] = urlDatabase[shortURL].url;
+      ownedUrls[shortURL] = urlDatabase[shortURL];
     }
   }
 
@@ -127,8 +127,8 @@ app.get('/urls/:id', (req, res) => {
   }
 
   const templateVars = {
-    url: urlDatabase[shortURL].url,
-    shortURL: req.params.id,
+    urlInfo: urlDatabase[shortURL],
+    shortURL: shortURL,
     user: users[currentUser]
   };
 
@@ -143,6 +143,9 @@ app.get('/u/:id', (req, res) => {
     res.status(404).send('Not Found.');
     return;
   }
+
+  // Increment count by 1 everytime the shortURL link is visited
+  urlDatabase[shortURL].visits++;
 
   const longURL = urlDatabase[shortURL].url;
   res.redirect(longURL);
@@ -166,7 +169,8 @@ app.post('/urls', (req, res) => {
   // Add new url pair to database and associate with current users id
   urlDatabase[shortURL] = {
     url: longURL,
-    userId: currentUser
+    userId: currentUser,
+    visits: 0
   };
 
   res.redirect(`/urls/${shortURL}`);

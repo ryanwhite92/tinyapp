@@ -15,12 +15,15 @@
     <tr style="text-align: left;">
       <th>shortURL</th>
       <th>URL</th>
+      <th>Visits</th>
+      <th>Actions</th>
     </tr>
 
     <% for (let key in urls) { %>
       <tr>
         <td><%= key %></td>
-        <td><%= urls[key] %></td>
+        <td><%= urls[key].url %></td>
+        <td><%= urls[key].visits %></td>
         <td>
           <a href="/urls/<%= key %>">Edit</a>
           <form method="POST" action="/urls/<%= key %>/delete?_method=DELETE" style="display: inline-block;">
