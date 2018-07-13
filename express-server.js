@@ -52,6 +52,29 @@ function urlsForUser(id) {
   return ownedUrls;
 }
 
+// Checks that input URL contains either `http` or `https` protocol, and adds
+// `http://` if it doesn't
+function verifyProtocol(link) {
+  if (!link.match(/^https?:\/\//)) {
+    link = `http://${link}`;
+  }
+
+  return link;
+}
+
+function getCurrentDate() {
+  const date = new Date();
+  const year = date.getFullYear();
+  let month = date.getMonth() + 1;
+  let day = date.getDate();
+
+  // Format month/day to have leading zero if single digit
+  month = month <= 9 ? '0' + month : month;
+  day = day <= 9 ? '0' + day : day;
+
+  return `${year}/${month}/${day}`;
+}
+
 // Check session cookie to determine if user is logged in
 // Logged in: Redirects to `/urls`
 // Logged out: Redirects to `/login`
@@ -138,6 +161,8 @@ app.get('/urls/:id', (req, res) => {
 // If shortURL exists redirect to URL; 404 error if shortURL does not exist
 app.get('/u/:id', (req, res) => {
   const shortURL = req.params.id;
+  const randomId = generateRandomString();
+  const currentUser = req.session.userId;
 
   if (!(shortURL in urlDatabase)) {
     res.status(404).send('Not Found.');
@@ -158,19 +183,23 @@ app.get('/u/:id', (req, res) => {
 // Logged out: 401 error
 app.post('/urls', (req, res) => {
   const currentUser = req.session.userId;
-  const longURL = req.body.longURL;
   const shortURL = generateRandomString();
+  let longURL = req.body.longURL;
 
   if (!currentUser) {
     res.status(401).send('Unauthorized');
     return;
   }
 
+  // Check that longURL includes `http` or `https` protocol, add `http` if it doesn't
+  longURL = verifyProtocol(longURL);
+
   // Add new url pair to database and associate with current users id
   urlDatabase[shortURL] = {
     url: longURL,
     userId: currentUser,
-    visits: 0
+    visits: 0,
+    created: getCurrentDate()
   };
 
   res.redirect(`/urls/${shortURL}`);
@@ -183,7 +212,7 @@ app.post('/urls', (req, res) => {
 app.put('/urls/:id/update', (req, res) => {
   const currentUser = req.session.userId;
   const shortURL = req.params.id;
-  const updatedURL = req.body.updatedURL;
+  let updatedURL = req.body.updatedURL;
 
   if (!currentUser) {
     res.status(401).send('Unauthorized');
@@ -195,6 +224,8 @@ app.put('/urls/:id/update', (req, res) => {
     return;
   }
 
+  // Check that urdatedURL includes `http` or `https`, add `http` if it doesn't
+  updatedURL = verifyProtocol(updatedURL);
   urlDatabase[shortURL].url = updatedURL;
 
   res.redirect(`/urls/${shortURL}`);
