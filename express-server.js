@@ -1,25 +1,27 @@
 require('dotenv').config();
-const bcrypt = require('bcrypt');
-
 const express = require('express');
 const app = express();
-
 const bodyParser = require('body-parser');
+const cookieSession = require('cookie-session');
+const bcrypt = require('bcrypt');
+
+const urlDatabase = {};
+const users = {};
+const PORT = 8080;
+
+// Use `EJS` Template Engine
+app.set('view engine', 'ejs');
+
+// Parses incoming request bodies
 app.use(bodyParser.urlencoded({extended: true}));
 
-const cookieSession = require('cookie-session');
+// Stores session data on the client within a cookie
 app.use(cookieSession({
   name: 'session',
   keys: [process.env.SESSION_SECRET, process.env.SESSION_SECRET2]
 }));
 
-const PORT = 8080;
-const urlDatabase = {};
-const users = {};
-
-app.set('view engine', 'ejs');
-
-// Generates string for userId and shortURL
+// Generates 6 character random string for userId and shortURL
 function generateRandomString() {
   const alphanumericChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
   let randomString = '';
@@ -37,16 +39,18 @@ function generateRandomString() {
 function urlsForUser(id) {
   const ownedUrls = {};
 
-  for (let url in urlDatabase) {
-    if (urlDatabase[url].userId === id) {
-      ownedUrls[url] = urlDatabase[url].url;
+  for (let shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userId === id) {
+      ownedUrls[url] = urlDatabase[shortURL].url;
     }
   }
 
   return ownedUrls;
 }
 
-// Redirects to `/urls` if user is logged in, otherwise redirects to `/login`
+// Check session cookie to determine if user is logged in
+// Logged in: Redirects to `/urls`
+// Logged out: Redirects to `/login`
 app.get('/', (req, res) => {
   const currentUser = req.session.userId;
 
@@ -58,16 +62,18 @@ app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
+// Check session cookie to determine if user is logged in
+// Logged in: Render template to list URLs the user has created
+// Logged out: 401 error
 app.get('/urls', (req, res) => {
   const currentUser = req.session.userId;
 
   if (!currentUser) {
-    res.status(403).send('Forbidden.');
+    res.status(401).send('Unauthorized');
     return;
   }
 
   const ownedUrls = urlsForUser(currentUser);
-
   const templateVars = {
     urls: ownedUrls,
     user: users[currentUser]
@@ -76,10 +82,12 @@ app.get('/urls', (req, res) => {
   res.render('urls_index', templateVars);
 });
 
+// Check session cookie to determine if user is logged in
+// Logged in: Render template with form to make new URL link
+// Logged out: Redirects to `/login`
 app.get('/urls/new', (req, res) => {
   const currentUser = req.session.userId;
 
-  // Undefined if not logged in, redirect to login page
   if (!currentUser) {
     res.redirect('/login');
     return;
@@ -88,18 +96,23 @@ app.get('/urls/new', (req, res) => {
   res.render('urls_new', { user: users[currentUser] });
 });
 
+// Check session cookie to determine if user is logged in
+// Logged in & owns URL: Render template with shortURL and URL update form
+// Logged in & does not own URL: 403 error
+// Logged out: 401 error
 app.get('/urls/:id', (req, res) => {
   const shortURL = req.params.id;
-  // If id is not in urlDatabase object, respond with `404: Not Found`.
+
+  // If URL does not exist return 404 error
   if (!(shortURL in urlDatabase)) {
-    res.status(404).send('Resource Not Found');
+    res.status(404).send('Not Found');
     return;
   }
 
   const currentUser = req.session.userId;
-  // If user is not logged in, send 403 and return
+
   if (!currentUser) {
-    res.status(403).send('Login to view this page.');
+    res.status(401).send('Unauthorized');
     return;
   }
 
@@ -110,7 +123,7 @@ app.get('/urls/:id', (req, res) => {
   }
 
   const templateVars = {
-    urls: urlDatabase,
+    url: urlDatabase[shortURL].url,
     shortURL: req.params.id,
     user: users[currentUser]
   };
@@ -118,52 +131,59 @@ app.get('/urls/:id', (req, res) => {
   res.render('urls_show', templateVars);
 });
 
-// Redirect to linked URL
+// If shortURL exists redirect to URL; 404 error if shortURL does not exist
 app.get('/u/:id', (req, res) => {
   const shortURL = req.params.id;
 
-  // If shortURL is not in urlDatabase, send 404 and return
   if (!(shortURL in urlDatabase)) {
     res.status(404).send('Not Found.');
     return;
   }
 
   const longURL = urlDatabase[shortURL].url;
-
   res.redirect(longURL);
 });
 
 // Add shortURL:longURL key:value pair to urlDatabase and redirect
+// Check session cookie to determine if user is logged in
+// Logged in: Generates shortURL and associates it with the user, redirects
+//            to `/urls/shortURL`
+// Logged out: 401 error
 app.post('/urls', (req, res) => {
   const currentUser = req.session.userId;
   const longURL = req.body.longURL;
   const shortURL = generateRandomString();
 
-  // If not logged in, send 403 status code and return
   if (!currentUser) {
-    res.status(403).send('Login to access that feature.');
+    res.status(401).send('Unauthorized');
     return;
   }
 
+  // Add new url pair to database and associate with current users id
   urlDatabase[shortURL] = {
     url: longURL,
     userId: currentUser
   };
 
-  console.log(urlDatabase);
-
   res.redirect(`/urls/${shortURL}`);
 });
 
-// Update shortURL to link to a different URL
+// Check session cookie to determine if user is logged in
+// Logged in & owns URL: updates URL link and redirects to `/urls`
+// Logged in & does not own URL: 403 error
+// Logged out: 401 error
 app.post('/urls/:id/update', (req, res) => {
   const currentUser = req.session.userId;
   const shortURL = req.params.id;
   const updatedURL = req.body.updatedURL;
 
-  // if currentUser is not the shortURL owner, send 403 and return
+  if (!currentUser) {
+    res.status(401).send('Unauthorized');
+    return;
+  }
+
   if (currentUser !== urlDatabase[shortURL].userId) {
-    res.status(403).send('You are not the owner of that link.');
+    res.status(403).send('Forbidden');
     return;
   }
 
@@ -172,14 +192,20 @@ app.post('/urls/:id/update', (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-// Delete shortURL id-value pair from database; redirect to urls page
+// Check session cookie to determine if user is logged in
+// Logged in & owns URL: deletes URL from database and redirects to `/urls`
+// Logged in & does not own URL: 403 error
+// Logged out: 401 error
 app.post('/urls/:id/delete', (req, res) => {
   const currentUser = req.session.userId;
   const shortURL = req.params.id;
 
-  // If current user is not the owner/creator of link, send 403 and return
+  if (!currentUser) {
+    res.status(401).send('Unauthorized');
+  }
+
   if (currentUser !== urlDatabase[shortURL].userId) {
-    res.status(403).send('You are not the owner of that link.');
+    res.status(403).send('Forbidden');
     return;
   }
 
@@ -188,27 +214,32 @@ app.post('/urls/:id/delete', (req, res) => {
   res.redirect('/urls');
 });
 
+// Check session cookie to determine if user is logged in
+// Logged in: redirects to `/urls`
+// Logged out: renders template with login form
 app.get('/login', (req, res) => {
   const currentUser = req.session.userId;
 
-  // If user is logged in, redirect to `/urls`
   if (currentUser) {
     res.redirect('/urls');
     return;
   }
 
-  res.render('login', { user: users[req.session.userId] });
+  res.render('login', { user: users[currentUser] });
 });
 
+// Check session cookie to determine if user is logged in
+// Logged in: redirects to `/urls`
+// Logged out: renders template with register form
 app.get('/register', (req, res) => {
   const currentUser = req.session.userId;
 
-if (currentUser) {
-  res.redirect('/urls');
-  return;
-}
+  if (currentUser) {
+    res.redirect('/urls');
+    return;
+  }
 
-  res.render('register', { user: users[req.session.userId] });
+  res.render('register', { user: users[currentUser] });
 });
 
 // Set userId cookie and redirect to `/urls`
@@ -217,47 +248,48 @@ app.post('/login', (req, res) => {
 
   // If email and/or password is empty, send 400 status code and return
   if (req.body.email === '' || req.body.password === '') {
-    res.status(400).send('Bad Request.');
+    res.status(400).send('Bad Request');
     return;
   }
 
-  // If email is in `users` database, set userId
-  for (let user in users) {
-    if (users[user].email === req.body.email) {
-      userId = user;
+  // If email in `users` database, set userId
+  for (let id in users) {
+    if (users[id].email === req.body.email) {
+      userId = id;
       break;
     }
   }
 
+  // If email is not in `users` database, send 403 error
   if (!userId) {
-    res.status(403).send('Request Denied.');
+    res.status(403).send('Forbidden');
     return;
   }
 
-  // userId will be undefined if email is not in `users` database. If userId is
-  // undefined or login password doesn't match hashed password in `users`, set
-  // 403 Forbidden status code and return
+  // If submitted password doesn't match hashed password in `users`, send 403 error
   const checkPassword = bcrypt.compareSync(req.body.password, users[userId].password);
   if (!checkPassword) {
-    res.status(403).send('Request Denied.');
+    res.status(403).send('Forbidden');
     return;
   }
 
+  // Sets users session cookie
   req.session.userId = userId;
   res.redirect('/urls');
 });
 
+// Adds new user to database and redirects to `/urls`
 app.post('/register', (req, res) => {
-  // If email and/or password is empty, send 400 status code and return
+  // If email and/or password is empty, send 400 serror
   if (req.body.email === '' || req.body.password === '') {
-    res.status(400).send('Bad Request.');
+    res.status(400).send('Bad Request');
     return;
   }
 
-  // If email has already been used to register, send 400 status code and return
+  // If email has already been used to register, send 400 error
   for (let id in users) {
     if (users[id].email == req.body.email) {
-      res.status(400).send('Bad request.');
+      res.status(403).send('Forbidden');
       return;
     }
   }
@@ -266,17 +298,19 @@ app.post('/register', (req, res) => {
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
 
+  // Add new user to `users` object
   users[randomId] = {
     id: randomId,
     email: req.body.email,
     password: hashedPassword
   };
 
+  // Sets users session cookie
   req.session.userId = randomId;
   res.redirect('/urls');
 });
 
-// Clears userId cookie
+// Logout button clears cookie and redirects to `/urls`
 app.post('/logout', (req, res) => {
   req.session = null;
   res.redirect('/urls');
@@ -284,7 +318,7 @@ app.post('/logout', (req, res) => {
 
 // If page doesn't exist, send 404 error
 app.get('*', (req, res) => {
-  res.status(404).send('Not Found.');
+  res.status(404).send('Not Found');
 });
 
 app.listen(PORT, () => {
