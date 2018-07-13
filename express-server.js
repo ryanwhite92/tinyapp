@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
+const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
@@ -11,6 +12,9 @@ const PORT = 8080;
 
 // Use `EJS` Template Engine
 app.set('view engine', 'ejs');
+
+// Allows use of PUT and DELETE
+app.use(methodOverride('_method'));
 
 // Parses incoming request bodies
 app.use(bodyParser.urlencoded({extended: true}));
@@ -41,7 +45,7 @@ function urlsForUser(id) {
 
   for (let shortURL in urlDatabase) {
     if (urlDatabase[shortURL].userId === id) {
-      ownedUrls[url] = urlDatabase[shortURL].url;
+      ownedUrls[shortURL] = urlDatabase[shortURL].url;
     }
   }
 
@@ -172,7 +176,7 @@ app.post('/urls', (req, res) => {
 // Logged in & owns URL: updates URL link and redirects to `/urls`
 // Logged in & does not own URL: 403 error
 // Logged out: 401 error
-app.post('/urls/:id/update', (req, res) => {
+app.put('/urls/:id/update', (req, res) => {
   const currentUser = req.session.userId;
   const shortURL = req.params.id;
   const updatedURL = req.body.updatedURL;
@@ -196,7 +200,7 @@ app.post('/urls/:id/update', (req, res) => {
 // Logged in & owns URL: deletes URL from database and redirects to `/urls`
 // Logged in & does not own URL: 403 error
 // Logged out: 401 error
-app.post('/urls/:id/delete', (req, res) => {
+app.delete('/urls/:id/delete', (req, res) => {
   const currentUser = req.session.userId;
   const shortURL = req.params.id;
 

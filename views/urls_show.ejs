@@ -16,7 +16,7 @@
 
     <h3>Update shortURL link</h3>
 
-    <form method="POST" action="/urls/<%= shortURL %>/update">
+    <form method="POST" action="/urls/<%= shortURL %>/update?_method=PUT">
       <input type="text" name="updatedURL" value="<%= url %>" style="width: 200px;">
       <input type="submit" value="Update">
     </form>
