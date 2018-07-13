@@ -4,14 +4,23 @@
 
   <head></head>
 
-  <body style="font-size:20px; padding:50px;">
-    <%- include('partials/_header') %>
+  <body>
 
-    <form action="/urls" method="POST" style="margin:150px;">
-      <label for="longURL">Enter a URL:</label>
-      <input id="longURL" type="text" name="longURL" placeholder="http://" style="width:300px">
-      <input type="submit" value="Submit">
-    </form>
+    <header>
+      <%- include('partials/_header') %>
+    </header>
+
+    <main>
+      <h2>Create a new shortURL</h2>
+
+      <form action="/urls" method="POST">
+        <label for="longURL">Enter a URL:</label>
+        <input id="longURL" type="text" name="longURL" value="http://" style="width:300px">
+        <input type="submit" value="Submit">
+      </form>
+
+      <small>URL must be use HTTP or HTTPS</small>
+    </main>
 
   </body>
 

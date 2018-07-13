@@ -1,11 +1,15 @@
-<h1>TinyApp</h1>
+<h1 style="display: inline-block">TinyApp</h1>
 
 <% if(user) { %>
-  <p>Logged in as <strong><%= user.email %></strong></p>
-  <form method="POST" action="/logout">
+  <p style="display: inline-block; float: right; margin-top: 30px">
+    Logged in as <strong><%= user.email %></strong>
+  </p>
+  <form method="POST" action="/logout" style="display: inline-block; float: right; margin-top: 30px">
     <input type="submit" value="Logout">
   </form>
 <% } else { %>
-  <a href="/login">Login</a>
-  <a href="/register">Register</a>
+  <nav style="float: right; margin-top: 30px;">
+    <a href="/login">Login</a>
+    <a href="/register">Register</a>
+  </nav>
 <% } %>
