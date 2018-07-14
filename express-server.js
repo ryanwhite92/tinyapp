@@ -13,7 +13,7 @@ const PORT = 8080;
 // Use `EJS` Template Engine
 app.set('view engine', 'ejs');
 
-// Allows use of PUT and DELETE
+// Allows for use of PUT and DELETE
 app.use(methodOverride('_method'));
 
 // Parses incoming request bodies
@@ -164,8 +164,6 @@ app.get('/urls/:id', (req, res) => {
 // If shortURL exists redirect to URL; 404 error if shortURL does not exist
 app.get('/u/:id', (req, res) => {
   const shortURL = req.params.id;
-  const randomId = generateRandomString();
-  const currentUser = req.session.userId;
 
   if (!(shortURL in urlDatabase)) {
     res.status(404).send('Not Found.');
