@@ -1,0 +1,41 @@
+a {
+  color: black;
+}
+
+th, td {
+  text-align: left;
+  min-width: 120px;
+}
+
+table {
+  width: 100%;
+}
+
+.inline {
+  display: inline-block;
+}
+
+.nomargin {
+  margin: 0;
+}
+
+.navigation {
+  float: right;
+  margin-top: 30px;
+}
+
+.newForm {
+  width: 300px;
+}
+
+.updateForm {
+  width: 200px;
+}
+
+.logoutForm {
+  float: right;
+}
+
+#longURL {
+  min-width: 200px;
+}

@@ -25,6 +25,9 @@ app.use(cookieSession({
   keys: [process.env.SESSION_SECRET, process.env.SESSION_SECRET2]
 }));
 
+// Serves static CSS files
+app.use(express.static(__dirname + '/public'));
+
 // Generates 6 character random string for userId and shortURL
 function generateRandomString() {
   const alphanumericChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
@@ -349,10 +352,10 @@ app.post('/register', (req, res) => {
   res.redirect('/urls');
 });
 
-// Logout button clears cookie and redirects to `/urls`
+// Logout button clears cookie and redirects to `/login`
 app.post('/logout', (req, res) => {
   req.session = null;
-  res.redirect('/urls');
+  res.redirect('/login');
 });
 
 // If page doesn't exist, send 404 error

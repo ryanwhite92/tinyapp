@@ -2,10 +2,13 @@
 
 <html lang="en">
 
-  <head></head>
+  <head>
+    <meta charset="utf-8">
+    <title>tinyApp - Create URL</title>
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+  </head>
 
   <body>
-
     <header>
       <%- include('partials/_header') %>
     </header>
@@ -15,11 +18,11 @@
 
       <form action="/urls" method="POST">
         <label for="longURL">Enter a URL:</label>
-        <input id="longURL" type="text" name="longURL" value="http://" style="width:300px">
+        <input id="longURL" type="text" name="longURL" value="http://" class="newForm">
         <input type="submit" value="Submit">
       </form>
 
-      <small>URL must be use HTTP or HTTPS</small>
+      <small>URL must use HTTP or HTTPS protocol</small>
     </main>
 
   </body>

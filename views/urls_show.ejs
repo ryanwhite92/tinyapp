@@ -2,27 +2,31 @@
 
 <html lang="en">
 
-<head>
-  <title>TinyApp</title>
-</head>
+  <head>
+    <meta charset="utf-8">
+    <title>tinyApp - Show URL</title>
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+  </head>
 
-<body>
-  <header>
-    <%- include('partials/_header') %>
-  </header>
+  <body>
+    <header>
+      <%- include('partials/_header') %>
+    </header>
 
-  <main>
-    <h2>ShortURL: /u/<%= shortURL %></h2>
-    <p>Number of times this link has been visited: <strong><%= urlInfo.visits %></strong></p>
+    <main>
+      <h2 class="nomargin">ShortURL: /u/<%= shortURL %></h2>
 
-    <h3>Update shortURL link</h3>
+      <h3 class="inline">Update link</h3>
 
-    <form method="POST" action="/urls/<%= shortURL %>/update?_method=PUT">
-      <input type="text" name="updatedURL" value="<%= urlInfo.url %>" style="width: 200px;">
-      <input type="submit" value="Update">
-    </form>
-  </main>
+      <form method="POST" action="/urls/<%= shortURL %>/update?_method=PUT" class="inline">
+        <input type="text" name="updatedURL" value="<%= urlInfo.url %>" class="updateForm">
+        <input type="submit" value="Update">
+      </form>
 
-</body>
+      <p class="nomargin">Link has been visited <strong><%= urlInfo.visits %></strong> times</p>
+      <p class="nomargin">Link created <%= urlInfo.created %></p>
+    </main>
+
+  </body>
 
 </html>

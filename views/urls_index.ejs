@@ -2,40 +2,54 @@
 
 <html lang="en">
 
-<head>
-  <title>TinyApp</title>
-</head>
+  <head>
+    <meta charset="utf-8">
+    <title>tinyApp - URL List</title>
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+  </head>
 
-<body>
-  <header>
-    <%- include('partials/_header') %>
-  </header>
+  <body>
+    <header>
+      <%- include('partials/_header') %>
+    </header>
 
-  <table style="width: 50%">
-    <tr style="text-align: left;">
-      <th>shortURL</th>
-      <th>URL</th>
-      <th>Visits</th>
-      <th>Actions</th>
-    </tr>
+    <% if (Object.keys(urls).length === 0 && urls.constructor === Object) { %>
+      <h3>You don't have any shortened URLs yet!</h3>
+    <% } else { %>
 
-    <% for (let key in urls) { %>
-      <tr>
-        <td><%= key %></td>
-        <td><%= urls[key].url %></td>
-        <td><%= urls[key].visits %></td>
-        <td>
-          <a href="/urls/<%= key %>">Edit</a>
-          <form method="POST" action="/urls/<%= key %>/delete?_method=DELETE" style="display: inline-block;">
-            <input type="submit" value="Delete">
-          </form>
-        </td>
-      </tr>
+      <table>
+        <tr>
+          <th>shortURL</th>
+          <th id="longURL">URL</th>
+          <th>Visits</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+
+        <% for (let key in urls) { %>
+          <tr>
+            <td><%= key %></td>
+            <td><%= urls[key].url %></td>
+            <td><%= urls[key].visits %></td>
+            <td><%= urls[key].created %></td>
+            <td>
+              <form action="/urls/<%= key %>">
+                <input type="submit" value="Edit">
+              </form>
+
+              <form method="POST" action="/urls/<%= key %>/delete?_method=DELETE">
+                <input type="submit" value="Delete">
+              </form>
+            </td>
+          </tr>
+        <% } %>
+
+      </table>
     <% } %>
 
-  </table>
-
-  <a href="/urls/new">Create new short URL</a>
-</body>
+    <form action="/urls/new">
+        <input type="submit" value="Create new URL">
+    </form>
+  </body>
 
 </html>

@@ -2,7 +2,9 @@
 
 <html>
   <head>
-    <title>TinyApp</title>
+    <meta charset="utf-8">
+    <title>tinyApp - Register</title>
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
   </head>
 
   <body>
@@ -20,8 +22,14 @@
         <label for="password">Password</label>
         <input id="password" type="password" name="password">
 
-        <input type="submit" value="Submit">
+        <input type="submit" value="Submit" class="button">
       </form>
+
+      <p class="inline">Already a User?
+        <form action="/login" class="inline">
+          <input type="submit" value="Login">
+        </form>
+      </p>
     </main>
   </body>
 </html>
