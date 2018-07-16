@@ -21,4 +21,5 @@ TinyApp is a full stack web application build with Node and Express that allows 
 ## Getting Started
 
 - Install all dependencies (using the `npm install` command).
+- Include .env file with two secret cookie session keys as SESSION_SECRET=VALUE1 and SESSION_SECRET2=VALUE2
 - Run the development web server using the `node express-server.js` command.
