@@ -5,27 +5,34 @@
   <head>
     <meta charset="utf-8">
     <title>tinyApp - Show URL</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
   </head>
 
   <body>
-    <header>
-      <%- include('partials/_header') %>
-    </header>
+    <div class="container col-md-offset-1">
+      <header>
+        <%- include('partials/_header') %>
+      </header>
 
-    <main>
-      <h2 class="nomargin">ShortURL: /u/<%= shortURL %></h2>
+      <div class="row col-md-6">
+        <h2>ShortURL: /u/<%= shortURL %></h2>
 
-      <h3 class="inline">Update link</h3>
+        <h3>Update link</h3>
 
-      <form method="POST" action="/urls/<%= shortURL %>/update?_method=PUT" class="inline">
-        <input type="text" name="updatedURL" value="<%= urlInfo.url %>" class="updateForm">
-        <input type="submit" value="Update">
-      </form>
+        <form method="POST" action="/urls/<%= shortURL %>/update?_method=PUT">
+          <div class="form-group">
+            <input type="text" name="updatedURL" value="<%= urlInfo.url %>" class="form-control">
+          </div>
 
-      <p class="nomargin">Link has been visited <strong><%= urlInfo.visits %></strong> times</p>
-      <p class="nomargin">Link created <%= urlInfo.created %></p>
-    </main>
+          <input type="submit" value="Update" class="btn btn-default btn-sm transparent-btn">
+        </form>
+        <br>
+
+        <p>Link has been visited <strong><%= urlInfo.visits %></strong> times</p>
+        <p>Link created <%= urlInfo.created %></p>
+      </div>
+    </div>
 
   </body>
 

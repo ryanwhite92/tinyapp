@@ -5,25 +5,30 @@
   <head>
     <meta charset="utf-8">
     <title>tinyApp - Create URL</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
   </head>
 
   <body>
-    <header>
-      <%- include('partials/_header') %>
-    </header>
+    <div class="container col-md-offset-1">
+      <header>
+        <%- include('partials/_header') %>
+      </header>
 
-    <main>
-      <h2>Create a new shortURL</h2>
+        <div class="row col-md-6">
+          <h2>Create a new shortURL</h2>
 
-      <form action="/urls" method="POST">
-        <label for="longURL">Enter a URL:</label>
-        <input id="longURL" type="text" name="longURL" value="http://" class="newForm">
-        <input type="submit" value="Submit">
-      </form>
+          <form action="/urls" method="POST">
+            <div class="form-group">
+              <label for="longURL">Enter a URL:</label>
+              <input id="longURL" type="text" name="longURL" value="http://" class="form-control">
+              <small>URL must use HTTP or HTTPS protocol</small>
+            </div>
 
-      <small>URL must use HTTP or HTTPS protocol</small>
-    </main>
+            <input type="submit" value="Submit" class="btn btn-default btn-sm transparent-btn">
+          </form>
+        </div>
+    </div>
 
   </body>
 

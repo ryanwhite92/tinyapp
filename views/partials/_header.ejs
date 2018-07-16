@@ -1,25 +1,25 @@
-<a href="/""><h1 class="inline">tinyApp</h1></a>
 
-<% if(user) { %>
-  <div class="navigation">
+  <div class="row">
 
-    <p class="nomargin">Logged in as <strong><%= user.email %></strong></p>
+  <a href="/"><h1 class="pull-left">tinyApp</h1></a>
 
-    <form method="POST" action="/logout" class="logoutForm">
-      <input type="submit" value="Logout">
-    </form>
+  <% if(user) { %>
+    <div class="pull-right custom-logout">
+
+      <p class="nomargin">Logged in as <strong><%= user.email %></strong></p>
+
+      <form method="POST" action="/logout">
+        <input type="submit" value="Logout" class="btn btn-default btn-xs pull-right transparent-btn">
+      </form>
+
+    </div>
+  <% } else { %>
+    <div class="pull-right custom-login">
+
+      <a href="/login" class="btn btn-default btn-sm transparent-btn">Login</a>
+      <a href="/register" class="btn btn-default btn-sm transparent-btn">Register</a>
+
+    </div>
+  <% } %>
 
   </div>
-<% } else { %>
-  <div class="navigation">
-
-    <form action="/login" class="inline">
-      <input type="submit" value="Login">
-    </form>
-
-    <form action="/register" class="inline">
-      <input type="submit" value="Register">
-    </form>
-
-  </div>
-<% } %>

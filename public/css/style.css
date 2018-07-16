@@ -1,41 +1,38 @@
-a {
-  color: black;
+body {
+  background: url(../assets/nathan-anderson-108136-unsplash.jpg) no-repeat center center fixed;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
 }
 
-th, td {
-  text-align: left;
-  min-width: 120px;
+body, a h1 {
+  color: white;
 }
 
 table {
-  width: 100%;
+  margin-top: 20px;
 }
 
 .inline {
-  display: inline-block;
+  display: inline;
+}
+
+.custom-login {
+  margin-top: 25px;
+  margin-bottom: 10px;
+}
+
+.custom-logout {
+  margin-top: 20px;
+  margin-bottom: 10px;
 }
 
 .nomargin {
   margin: 0;
 }
 
-.navigation {
-  float: right;
-  margin-top: 30px;
-}
-
-.newForm {
-  width: 300px;
-}
-
-.updateForm {
-  width: 200px;
-}
-
-.logoutForm {
-  float: right;
-}
-
-#longURL {
-  min-width: 200px;
+.transparent-btn {
+  background-color: transparent;
+  color: white;
 }

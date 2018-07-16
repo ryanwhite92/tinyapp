@@ -4,32 +4,38 @@
   <head>
     <meta charset="utf-8">
     <title>tinyApp - Register</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
   </head>
 
   <body>
-    <header>
-      <%- include('partials/_header') %>
-    </header>
+    <div class="container col-md-offset-1">
+      <header>
+        <%- include('partials/_header') %>
+      </header>
 
-    <main>
-      <h2>Register</h2>
+      <div class="row col-md-4">
+        <h2>Register</h2>
 
-      <form method="POST" action="/register">
-        <label for="email">Email</label>
-        <input id="email" type="email" name="email">
+        <form method="POST" action="/register">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" class="form-control" name="email" placeholder="Email">
+          </div>
 
-        <label for="password">Password</label>
-        <input id="password" type="password" name="password">
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" class="form-control" name="password" placeholder="Password">
+          </div>
 
-        <input type="submit" value="Submit" class="button">
-      </form>
-
-      <p class="inline">Already a User?
-        <form action="/login" class="inline">
-          <input type="submit" value="Login">
+          <input type="submit" value="Submit" class="btn btn-default btn-sm transparent-btn">
         </form>
-      </p>
-    </main>
+        <br>
+
+        <p class="inline"><strong>Already a User?<strong>
+          <a href="/login" class="btn btn-default btn-xs transparent-btn">Login</a>
+        </p>
+      </div>
+    </div>
   </body>
 </html>
