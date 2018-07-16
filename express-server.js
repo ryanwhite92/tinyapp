@@ -82,9 +82,10 @@ function getCurrentDate() {
 // Logged in: Redirects to `/urls`
 // Logged out: Redirects to `/login`
 app.get('/', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (currentUser) {
+  // If user is registered and logged in, redirect to `/urls`
+  if (userId in users) {
     res.redirect('/urls');
     return;
   }
@@ -96,17 +97,18 @@ app.get('/', (req, res) => {
 // Logged in: Render template to list URLs the user has created
 // Logged out: 401 error
 app.get('/urls', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (!currentUser) {
-    res.status(401).send('Unauthorized');
+  // If current user is not a registered user, 403 error
+  if (!(userId in users)) {
+    res.redirect('/login');
     return;
   }
 
-  const ownedUrls = urlsForUser(currentUser);
+  const ownedUrls = urlsForUser(userId);
   const templateVars = {
     urls: ownedUrls,
-    user: users[currentUser]
+    user: users[userId]
   };
 
   res.render('urls_index', templateVars);
@@ -116,14 +118,14 @@ app.get('/urls', (req, res) => {
 // Logged in: Render template with form to make new URL link
 // Logged out: Redirects to `/login`
 app.get('/urls/new', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.redirect('/login');
     return;
   }
 
-  res.render('urls_new', { user: users[currentUser] });
+  res.render('urls_new', { user: users[userId] });
 });
 
 // Check session cookie to determine if user is logged in
@@ -139,15 +141,15 @@ app.get('/urls/:id', (req, res) => {
     return;
   }
 
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.status(401).send('Unauthorized');
     return;
   }
 
-  // If currentUser is not the owner of the shortURL, send 403 and return.
-  if (currentUser !== urlDatabase[shortURL].userId) {
+  // If userId is not the owner of the shortURL, send 403 and return.
+  if (userId !== urlDatabase[shortURL].userId) {
     res.status(403).send('Forbidden');
     return;
   }
@@ -155,7 +157,7 @@ app.get('/urls/:id', (req, res) => {
   const templateVars = {
     urlInfo: urlDatabase[shortURL],
     shortURL: shortURL,
-    user: users[currentUser]
+    user: users[userId]
   };
 
   res.render('urls_show', templateVars);
@@ -164,10 +166,25 @@ app.get('/urls/:id', (req, res) => {
 // If shortURL exists redirect to URL; 404 error if shortURL does not exist
 app.get('/u/:id', (req, res) => {
   const shortURL = req.params.id;
+  let userId = req.session.userId;
 
   if (!(shortURL in urlDatabase)) {
     res.status(404).send('Not Found.');
     return;
+  }
+
+  // If user is not signed in, assign them a session cookie
+  if (!(userId in users)) {
+    const randomId = generateRandomString();
+    req.session.userId = randomId;
+    userId = req.session.userId;
+  }
+
+  // If visitor is not in the database for the current shortId, increase
+  // unique views by 1
+  if (!(urlDatabase[shortURL].visitorIds.includes(userId))) {
+    urlDatabase[shortURL].visitorIds.push(userId);
+    urlDatabase[shortURL].uniqueVisits++;
   }
 
   // Increment count by 1 everytime the shortURL link is visited
@@ -183,11 +200,11 @@ app.get('/u/:id', (req, res) => {
 //            to `/urls/shortURL`
 // Logged out: 401 error
 app.post('/urls', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
   const shortURL = generateRandomString();
   let longURL = req.body.longURL;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.status(401).send('Unauthorized');
     return;
   }
@@ -198,8 +215,10 @@ app.post('/urls', (req, res) => {
   // Add new url pair to database and associate with current users id
   urlDatabase[shortURL] = {
     url: longURL,
-    userId: currentUser,
+    userId: userId,
     visits: 0,
+    uniqueVisits: 0,
+    visitorIds: [],
     created: getCurrentDate()
   };
 
@@ -211,16 +230,16 @@ app.post('/urls', (req, res) => {
 // Logged in & does not own URL: 403 error
 // Logged out: 401 error
 app.put('/urls/:id/update', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
   const shortURL = req.params.id;
   let updatedURL = req.body.updatedURL;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.status(401).send('Unauthorized');
     return;
   }
 
-  if (currentUser !== urlDatabase[shortURL].userId) {
+  if (userId !== urlDatabase[shortURL].userId) {
     res.status(403).send('Forbidden');
     return;
   }
@@ -237,14 +256,14 @@ app.put('/urls/:id/update', (req, res) => {
 // Logged in & does not own URL: 403 error
 // Logged out: 401 error
 app.delete('/urls/:id/delete', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
   const shortURL = req.params.id;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.status(401).send('Unauthorized');
   }
 
-  if (currentUser !== urlDatabase[shortURL].userId) {
+  if (userId !== urlDatabase[shortURL].userId) {
     res.status(403).send('Forbidden');
     return;
   }
@@ -258,28 +277,28 @@ app.delete('/urls/:id/delete', (req, res) => {
 // Logged in: redirects to `/urls`
 // Logged out: renders template with login form
 app.get('/login', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (currentUser) {
+  if (userId in users) {
     res.redirect('/urls');
     return;
   }
 
-  res.render('login', { user: users[currentUser] });
+  res.render('login', { user: users[userId] });
 });
 
 // Check session cookie to determine if user is logged in
 // Logged in: redirects to `/urls`
 // Logged out: renders template with register form
 app.get('/register', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (currentUser) {
+  if (userId in users) {
     res.redirect('/urls');
     return;
   }
 
-  res.render('register', { user: users[currentUser] });
+  res.render('register', { user: users[userId] });
 });
 
 // Set userId cookie and redirect to `/urls`
