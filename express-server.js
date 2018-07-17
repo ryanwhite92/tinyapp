@@ -1,14 +1,14 @@
 require('dotenv').config();
 const express = require('express');
-const app = express();
 const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 
+const app = express();
+const PORT = 8080;
 const urlDatabase = {};
 const users = {};
-const PORT = 8080;
 
 // Use `EJS` Template Engine
 app.set('view engine', 'ejs');
@@ -55,6 +55,19 @@ function urlsForUser(id) {
   return ownedUrls;
 }
 
+// Returns a list of all unique visitors
+function countUniqueVisits(visitors) {
+  const uniqueVisitors = [];
+
+  visitors.forEach((visitor) => {
+    if (!(uniqueVisitors.includes(visitor.id))) {
+      uniqueVisitors.push(visitor.id);
+    }
+  });
+
+  return uniqueVisitors.length;
+}
+
 // Checks that input URL contains either `http` or `https` protocol, and adds
 // `http://` if it doesn't
 function verifyProtocol(link) {
@@ -65,6 +78,7 @@ function verifyProtocol(link) {
   return link;
 }
 
+// Create timestamp in YYYY/MM/DD HH:MM:SS format
 function createTimestamp() {
   const date = new Date();
   const year = date.getFullYear();
@@ -74,7 +88,6 @@ function createTimestamp() {
   let minutes = date.getMinutes();
   let seconds = date.getSeconds();
 
-  // Format month/day to have leading zero if single digit
   month = addLeadingZero(month);
   day = addLeadingZero(day);
   hours = addLeadingZero(hours);
@@ -84,6 +97,7 @@ function createTimestamp() {
   return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
 }
 
+// Format month/day to have leading zero if single digit
 function addLeadingZero(time) {
   return time <= 9 ? '0' + time : time;
 }
@@ -164,6 +178,9 @@ app.get('/urls/:id', (req, res) => {
     return;
   }
 
+  // Get number of unique visits to the shortURL
+  urlDatabase[shortURL].uniqueVisits = countUniqueVisits(urlDatabase[shortURL].visitors);
+
   const templateVars = {
     urlInfo: urlDatabase[shortURL],
     shortURL: shortURL,
@@ -176,7 +193,6 @@ app.get('/urls/:id', (req, res) => {
 // If shortURL exists redirect to URL; 404 error if shortURL does not exist
 app.get('/u/:id', (req, res) => {
   const shortURL = req.params.id;
-  //const timestamp = createTimestamp();
   let userId = req.session.userId;
 
   if (!(shortURL in urlDatabase)) {
@@ -191,22 +207,11 @@ app.get('/u/:id', (req, res) => {
     userId = req.session.userId;
   }
 
-  // If visitor is not in the database for the current shortId, increase
-  // unique views by 1
-  if (!(urlDatabase[shortURL].visitorIds.includes(userId))) {
-    urlDatabase[shortURL].visitorIds.push(userId);
-    urlDatabase[shortURL].uniqueVisits++;
-  }
-
-  // Increment count by 1 everytime the shortURL link is visited
-  urlDatabase[shortURL].visits++;
-
-  // Add visitor tracking
-  urlDatabase[shortURL].visitorTracking.push({
-    visitorId: userId,
+  // Add visitor tracking for analytics
+  urlDatabase[shortURL].visitors.push({
+    id: userId,
     timestamp: createTimestamp()
   });
-  console.log(urlDatabase[shortURL].visitorTracking);
 
   const longURL = urlDatabase[shortURL].url;
   res.redirect(longURL);
@@ -219,14 +224,15 @@ app.get('/u/:id', (req, res) => {
 // Logged out: 401 error
 app.post('/urls', (req, res) => {
   const userId = req.session.userId;
-  const shortURL = generateRandomString();
-  const created = createTimestamp();
-  let longURL = req.body.longURL;
 
   if (!(userId in users)) {
     res.status(401).send('Unauthorized');
     return;
   }
+
+  const shortURL = generateRandomString();
+  const created = createTimestamp();
+  let longURL = req.body.longURL;
 
   // Check that longURL includes `http` or `https` protocol, add `http` if it doesn't
   longURL = verifyProtocol(longURL);
@@ -235,11 +241,8 @@ app.post('/urls', (req, res) => {
   urlDatabase[shortURL] = {
     url: longURL,
     userId: userId,
-    visits: 0,
-    uniqueVisits: 0,
-    visitorIds: [],
     created: created.split(' ')[0],
-    visitorTracking: []
+    visitors: []
   };
 
   res.redirect(`/urls/${shortURL}`);
