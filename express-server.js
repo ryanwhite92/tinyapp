@@ -125,7 +125,7 @@ app.get('/urls', (req, res) => {
 
   // If current user is not a registered user, 403 error
   if (!(userId in users)) {
-    res.redirect('/login');
+    res.status(403).send('Unauthorized');
     return;
   }
 
