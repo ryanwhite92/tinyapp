@@ -65,17 +65,27 @@ function verifyProtocol(link) {
   return link;
 }
 
-function getCurrentDate() {
+function createTimestamp() {
   const date = new Date();
   const year = date.getFullYear();
   let month = date.getMonth() + 1;
   let day = date.getDate();
+  let hours = date.getHours();
+  let minutes = date.getMinutes();
+  let seconds = date.getSeconds();
 
   // Format month/day to have leading zero if single digit
-  month = month <= 9 ? '0' + month : month;
-  day = day <= 9 ? '0' + day : day;
+  month = addLeadingZero(month);
+  day = addLeadingZero(day);
+  hours = addLeadingZero(hours);
+  minutes = addLeadingZero(minutes);
+  seconds = addLeadingZero(seconds);
 
-  return `${year}/${month}/${day}`;
+  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+}
+
+function addLeadingZero(time) {
+  return time <= 9 ? '0' + time : time;
 }
 
 // Check session cookie to determine if user is logged in
@@ -166,6 +176,7 @@ app.get('/urls/:id', (req, res) => {
 // If shortURL exists redirect to URL; 404 error if shortURL does not exist
 app.get('/u/:id', (req, res) => {
   const shortURL = req.params.id;
+  //const timestamp = createTimestamp();
   let userId = req.session.userId;
 
   if (!(shortURL in urlDatabase)) {
@@ -190,6 +201,13 @@ app.get('/u/:id', (req, res) => {
   // Increment count by 1 everytime the shortURL link is visited
   urlDatabase[shortURL].visits++;
 
+  // Add visitor tracking
+  urlDatabase[shortURL].visitorTracking.push({
+    visitorId: userId,
+    timestamp: createTimestamp()
+  });
+  console.log(urlDatabase[shortURL].visitorTracking);
+
   const longURL = urlDatabase[shortURL].url;
   res.redirect(longURL);
 });
@@ -202,6 +220,7 @@ app.get('/u/:id', (req, res) => {
 app.post('/urls', (req, res) => {
   const userId = req.session.userId;
   const shortURL = generateRandomString();
+  const created = createTimestamp();
   let longURL = req.body.longURL;
 
   if (!(userId in users)) {
@@ -219,7 +238,8 @@ app.post('/urls', (req, res) => {
     visits: 0,
     uniqueVisits: 0,
     visitorIds: [],
-    created: getCurrentDate()
+    created: created.split(' ')[0],
+    visitorTracking: []
   };
 
   res.redirect(`/urls/${shortURL}`);

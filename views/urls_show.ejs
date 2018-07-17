@@ -32,6 +32,26 @@
         <p>Link has been visited <strong><%= urlInfo.visits %></strong> times</p>
         <p>Link has been visited by <strong><%= urlInfo.visitorIds.length %></strong> unique viewers</p>
         <p>Link created <%= urlInfo.created %></p>
+
+        <div class="row">
+          <% if (urlInfo.visitorTracking.length > 0) { %>
+            <h3>All visits to this URL</h3>
+
+            <table class="table">
+              <tr>
+                <th>Timestamp</th>
+                <th>Visitor Id</th>
+              </tr>
+              <% urlInfo.visitorTracking.forEach((visitor) => { %>
+                <tr>
+                  <td><%= visitor.visitorId %></td>
+                  <td><%= visitor.timestamp %></td>
+                </tr>
+              <% }); %>
+            </table>
+
+          <% } %>
+        </div>
       </div>
     </div>
 
