@@ -1,14 +1,14 @@
 require('dotenv').config();
 const express = require('express');
-const app = express();
 const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 
+const app = express();
+const PORT = 8080;
 const urlDatabase = {};
 const users = {};
-const PORT = 8080;
 
 // Use `EJS` Template Engine
 app.set('view engine', 'ejs');
@@ -55,6 +55,19 @@ function urlsForUser(id) {
   return ownedUrls;
 }
 
+// Returns a list of all unique visitors
+function countUniqueVisits(visitors) {
+  const uniqueVisitors = [];
+
+  visitors.forEach((visitor) => {
+    if (!(uniqueVisitors.includes(visitor.id))) {
+      uniqueVisitors.push(visitor.id);
+    }
+  });
+
+  return uniqueVisitors.length;
+}
+
 // Checks that input URL contains either `http` or `https` protocol, and adds
 // `http://` if it doesn't
 function verifyProtocol(link) {
@@ -65,26 +78,38 @@ function verifyProtocol(link) {
   return link;
 }
 
-function getCurrentDate() {
+// Create timestamp in YYYY/MM/DD HH:MM:SS format
+function createTimestamp() {
   const date = new Date();
   const year = date.getFullYear();
   let month = date.getMonth() + 1;
   let day = date.getDate();
+  let hours = date.getHours();
+  let minutes = date.getMinutes();
+  let seconds = date.getSeconds();
 
-  // Format month/day to have leading zero if single digit
-  month = month <= 9 ? '0' + month : month;
-  day = day <= 9 ? '0' + day : day;
+  month = addLeadingZero(month);
+  day = addLeadingZero(day);
+  hours = addLeadingZero(hours);
+  minutes = addLeadingZero(minutes);
+  seconds = addLeadingZero(seconds);
 
-  return `${year}/${month}/${day}`;
+  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+}
+
+// Format month/day to have leading zero if single digit
+function addLeadingZero(time) {
+  return time <= 9 ? '0' + time : time;
 }
 
 // Check session cookie to determine if user is logged in
 // Logged in: Redirects to `/urls`
 // Logged out: Redirects to `/login`
 app.get('/', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (currentUser) {
+  // If user is registered and logged in, redirect to `/urls`
+  if (userId in users) {
     res.redirect('/urls');
     return;
   }
@@ -96,17 +121,18 @@ app.get('/', (req, res) => {
 // Logged in: Render template to list URLs the user has created
 // Logged out: 401 error
 app.get('/urls', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (!currentUser) {
-    res.status(401).send('Unauthorized');
+  // If current user is not a registered user, 403 error
+  if (!(userId in users)) {
+    res.redirect('/login');
     return;
   }
 
-  const ownedUrls = urlsForUser(currentUser);
+  const ownedUrls = urlsForUser(userId);
   const templateVars = {
     urls: ownedUrls,
-    user: users[currentUser]
+    user: users[userId]
   };
 
   res.render('urls_index', templateVars);
@@ -116,14 +142,14 @@ app.get('/urls', (req, res) => {
 // Logged in: Render template with form to make new URL link
 // Logged out: Redirects to `/login`
 app.get('/urls/new', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.redirect('/login');
     return;
   }
 
-  res.render('urls_new', { user: users[currentUser] });
+  res.render('urls_new', { user: users[userId] });
 });
 
 // Check session cookie to determine if user is logged in
@@ -139,23 +165,26 @@ app.get('/urls/:id', (req, res) => {
     return;
   }
 
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.status(401).send('Unauthorized');
     return;
   }
 
-  // If currentUser is not the owner of the shortURL, send 403 and return.
-  if (currentUser !== urlDatabase[shortURL].userId) {
+  // If userId is not the owner of the shortURL, send 403 and return.
+  if (userId !== urlDatabase[shortURL].userId) {
     res.status(403).send('Forbidden');
     return;
   }
 
+  // Get number of unique visits to the shortURL
+  urlDatabase[shortURL].uniqueVisits = countUniqueVisits(urlDatabase[shortURL].visitors);
+
   const templateVars = {
     urlInfo: urlDatabase[shortURL],
     shortURL: shortURL,
-    user: users[currentUser]
+    user: users[userId]
   };
 
   res.render('urls_show', templateVars);
@@ -164,14 +193,25 @@ app.get('/urls/:id', (req, res) => {
 // If shortURL exists redirect to URL; 404 error if shortURL does not exist
 app.get('/u/:id', (req, res) => {
   const shortURL = req.params.id;
+  let userId = req.session.userId;
 
   if (!(shortURL in urlDatabase)) {
     res.status(404).send('Not Found.');
     return;
   }
 
-  // Increment count by 1 everytime the shortURL link is visited
-  urlDatabase[shortURL].visits++;
+  // If user is not signed in, assign them a session cookie
+  if (!(userId in users)) {
+    const randomId = generateRandomString();
+    req.session.userId = randomId;
+    userId = req.session.userId;
+  }
+
+  // Add visitor tracking for analytics
+  urlDatabase[shortURL].visitors.push({
+    id: userId,
+    timestamp: createTimestamp()
+  });
 
   const longURL = urlDatabase[shortURL].url;
   res.redirect(longURL);
@@ -183,14 +223,16 @@ app.get('/u/:id', (req, res) => {
 //            to `/urls/shortURL`
 // Logged out: 401 error
 app.post('/urls', (req, res) => {
-  const currentUser = req.session.userId;
-  const shortURL = generateRandomString();
-  let longURL = req.body.longURL;
+  const userId = req.session.userId;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.status(401).send('Unauthorized');
     return;
   }
+
+  const shortURL = generateRandomString();
+  const created = createTimestamp();
+  let longURL = req.body.longURL;
 
   // Check that longURL includes `http` or `https` protocol, add `http` if it doesn't
   longURL = verifyProtocol(longURL);
@@ -198,9 +240,9 @@ app.post('/urls', (req, res) => {
   // Add new url pair to database and associate with current users id
   urlDatabase[shortURL] = {
     url: longURL,
-    userId: currentUser,
-    visits: 0,
-    created: getCurrentDate()
+    userId: userId,
+    created: created.split(' ')[0],
+    visitors: []
   };
 
   res.redirect(`/urls/${shortURL}`);
@@ -211,16 +253,16 @@ app.post('/urls', (req, res) => {
 // Logged in & does not own URL: 403 error
 // Logged out: 401 error
 app.put('/urls/:id/update', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
   const shortURL = req.params.id;
   let updatedURL = req.body.updatedURL;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.status(401).send('Unauthorized');
     return;
   }
 
-  if (currentUser !== urlDatabase[shortURL].userId) {
+  if (userId !== urlDatabase[shortURL].userId) {
     res.status(403).send('Forbidden');
     return;
   }
@@ -237,14 +279,14 @@ app.put('/urls/:id/update', (req, res) => {
 // Logged in & does not own URL: 403 error
 // Logged out: 401 error
 app.delete('/urls/:id/delete', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
   const shortURL = req.params.id;
 
-  if (!currentUser) {
+  if (!(userId in users)) {
     res.status(401).send('Unauthorized');
   }
 
-  if (currentUser !== urlDatabase[shortURL].userId) {
+  if (userId !== urlDatabase[shortURL].userId) {
     res.status(403).send('Forbidden');
     return;
   }
@@ -258,28 +300,28 @@ app.delete('/urls/:id/delete', (req, res) => {
 // Logged in: redirects to `/urls`
 // Logged out: renders template with login form
 app.get('/login', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (currentUser) {
+  if (userId in users) {
     res.redirect('/urls');
     return;
   }
 
-  res.render('login', { user: users[currentUser] });
+  res.render('login', { user: users[userId] });
 });
 
 // Check session cookie to determine if user is logged in
 // Logged in: redirects to `/urls`
 // Logged out: renders template with register form
 app.get('/register', (req, res) => {
-  const currentUser = req.session.userId;
+  const userId = req.session.userId;
 
-  if (currentUser) {
+  if (userId in users) {
     res.redirect('/urls');
     return;
   }
 
-  res.render('register', { user: users[currentUser] });
+  res.render('register', { user: users[userId] });
 });
 
 // Set userId cookie and redirect to `/urls`

@@ -29,8 +29,29 @@
         </form>
         <br>
 
-        <p>Link has been visited <strong><%= urlInfo.visits %></strong> times</p>
+        <p>Link has been visited <strong><%= urlInfo.visitors.length %></strong> times</p>
+        <p>Link has been visited by <strong><%= urlInfo.uniqueVisits %></strong> unique viewers</p>
         <p>Link created <%= urlInfo.created %></p>
+
+        <div class="row">
+          <% if (urlInfo.visitors.length > 0) { %>
+            <h3>All visits to this URL</h3>
+
+            <table class="table">
+              <tr>
+                <th>Timestamp</th>
+                <th>Visitor Id</th>
+              </tr>
+              <% urlInfo.visitors.forEach((visitor) => { %>
+                <tr>
+                  <td><%= visitor.id %></td>
+                  <td><%= visitor.timestamp %></td>
+                </tr>
+              <% }); %>
+            </table>
+
+          <% } %>
+        </div>
       </div>
     </div>
 
